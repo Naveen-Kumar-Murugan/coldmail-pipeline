@@ -8,6 +8,7 @@ Auth: query param ?apiToken=<key>  OR  header x-api-token: <key>
 import os
 from typing import Any
 import requests
+import re
 from utils.logger import stage_header, ok, warn, err, info, console, _RICH
 from utils.rate_limiter import raise_for_rate_limit, sleep_between, retry_request
 
@@ -32,7 +33,6 @@ def _is_junk_domain(domain: str) -> bool:
 def _call_ocean(api_key: str, seed_domain: str, count: int) -> dict:
     resp = requests.post(
         _OCEAN_URL,
-        params={"apiToken": api_key},
         headers={"x-api-token": api_key, "Content-Type": "application/json"},
         json={
             "size": count,
@@ -47,13 +47,25 @@ def _call_ocean(api_key: str, seed_domain: str, count: int) -> dict:
     resp.raise_for_status()
     return resp.json()
 
+def _is_valid_domain(domain: str) -> bool:
+    pattern = r"^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$"
+    return bool(re.match(pattern, domain.strip()))
 
 def run(seed_domain: str, config: dict) -> list[dict[str, Any]]:
     stage_header(1, "Ocean.io", f"Finding lookalikes for {seed_domain}")
 
+    seed_domain = seed_domain.lower().strip()
+    if not _is_valid_domain(seed_domain):
+        err(
+            f"Invalid domain '{seed_domain}'. "
+            "Expected a domain such as 'shopify.com'."
+        )
+        raise SystemExit(1)
+
     api_key = config.get("OCEAN_API_KEY") or os.getenv("OCEAN_API_KEY", "")
     if not api_key:
-        err("OCEAN_API_KEY is not set."); raise ValueError("Missing OCEAN_API_KEY")
+        err("OCEAN_API_KEY is missing."); 
+        raise SystemExit(1)
 
     count = int(config.get("OCEAN_LOOKALIKE_COUNT", 15))
     info(f"Requesting {count} lookalike companies …")
@@ -61,11 +73,22 @@ def run(seed_domain: str, config: dict) -> list[dict[str, Any]]:
     try:
         data = _call_ocean(api_key, seed_domain, count)
     except requests.HTTPError as exc:
-        status = exc.response.status_code if exc.response else "?"
-        if status == 402:   err("Ocean.io: Insufficient credits (HTTP 402)L.")
-        elif status in (401, 403): err("Ocean.io: Auth failed — check OCEAN_API_KEY.")
-        elif status == 422: err(f"Ocean.io: Validation error — is '{seed_domain}' a valid domain?")
-        else:               err(f"Ocean.io: HTTP {status}")
+        response = exc.response
+        status = response.status_code if response is not None else None
+        if status in (401, 403):
+            err("Ocean.io authentication failed.")
+            warn("Check OCEAN_API_KEY and verify it has sufficient permissions or if the OCEAN_API_KEY is valid.")
+            return []
+        elif status == 402:
+            err("Ocean.io account has insufficient credits.")
+            return []
+        elif status == 422:
+            err(f"'{seed_domain}' is not a valid domain.")
+            return []
+        err(f"Ocean.io returned HTTP {status}.")
+        return []
+    except Exception:
+        err("Unexpected Ocean.io failure.")
         raise
 
     raw_companies = data.get("companies", [])

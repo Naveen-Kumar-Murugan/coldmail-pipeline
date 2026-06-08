@@ -862,6 +862,6 @@ Response: { "messageId": "<abc@relay.brevo.com>" }
 
 **Naveen Kumar M**
 Work email: [mnaveenkumar.dev04@gmail.com](mailto:mnaveenkumar.dev04@gmail.com)
-Portfolio: [navdev.xyz](https://navdev.xyzhttps://naveen-kumar-m.vercel.app/)
+Portfolio: [navdev.xyz](https://naveen-kumar-m.vercel.app/)
 
 ---

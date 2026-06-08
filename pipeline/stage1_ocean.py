@@ -67,7 +67,7 @@ def run(seed_domain: str, config: dict) -> list[dict[str, Any]]:
         err("OCEAN_API_KEY is missing."); 
         raise SystemExit(1)
 
-    count = int(config.get("OCEAN_LOOKALIKE_COUNT", 15))
+    count = int(config.get("OCEAN_LOOKALIKE_COUNT", 3))
     info(f"Requesting {count} lookalike companies …")
 
     try:

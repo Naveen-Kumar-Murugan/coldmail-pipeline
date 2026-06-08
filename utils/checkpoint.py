@@ -14,7 +14,6 @@ Layout
 """
 
 import json
-import os
 import time
 from pathlib import Path
 from typing import Any
@@ -43,7 +42,10 @@ def load(run_id: str, stage: str) -> Any | None:
     """Return saved stage data, or None if not yet written."""
     path = _run_dir(run_id) / f"{stage}.json"
     if path.exists():
-        return json.loads(path.read_text())
+        try:
+            return json.loads(path.read_text())
+        except json.JSONDecodeError:
+            return None
     return None
 
 

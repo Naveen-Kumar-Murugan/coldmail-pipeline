@@ -11,9 +11,6 @@ import requests
 from utils.logger import stage_header, ok, warn, err, info, console, _RICH
 from utils.rate_limiter import raise_for_rate_limit, sleep_between, retry_request
 from email_templates.outreach import build_email
-from dotenv import load_dotenv
-
-load_dotenv()
 
 _BREVO_URL = "https://api.brevo.com/v3/smtp/email"
 

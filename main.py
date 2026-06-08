@@ -55,6 +55,11 @@ def validate_env() -> dict:
         sys.exit(1)
     return config
 
+def main_ui(port: int = 5055) -> None:
+    """Start the Flask dashboard and open it in the browser."""
+    validate_env()
+    from dashboard.server import start_server
+    start_server(port=port, open_browser=True)
 
 def print_banner(seed_domain: str, run_id: str) -> None:
     sep = "═" * 60
@@ -120,6 +125,10 @@ def parse_args():
                    help="List all saved runs and exit")
     p.add_argument("--dry-run", action="store_true",
                    help="Run Stages 1-3 only, skip email send")
+    p.add_argument("--ui", action="store_true",
+                   help="Open the web dashboard instead of CLI mode")
+    p.add_argument("--port", type=int, default=5055,
+                   help="Port for the web dashboard (default: 5055)")
     p.add_argument("--skip-confirm", action="store_true",
                    help="Skip send-confirmation prompt (auto-fires!)")
     return p.parse_args()
@@ -144,7 +153,11 @@ def list_runs_and_exit():
 
 def main():
     args = parse_args()
-
+ 
+    if args.ui:
+        main_ui(port=args.port)
+        return
+ 
     if args.list_runs:
         list_runs_and_exit()
 
